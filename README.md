@@ -10,7 +10,7 @@ you. No browser, no Electron, no UI.
   attached. The large READY payload is parsed for a few fields and dropped
   instead of cached. Memory with a busy real account is still to be measured.
 - Cold release build in about one minute on a 4-core ARM box, incremental
-  rebuilds in seconds. No Skia, no UI toolkit, no native media stack.
+  rebuilds in seconds.
 - MCP over HTTP (bearer token) or stdio.
 - Logs in by QR code (scan with the phone app) or by pasting a token.
 
