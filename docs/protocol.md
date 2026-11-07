@@ -69,8 +69,12 @@ app. Agenticord claims a recent Firefox on Linux.
 - Search: an index that is not ready returns HTTP 202 with
   `{"code": 110000, "retry_after": <seconds>}`. Wait and repeat the call.
 - A request that needs a captcha answers HTTP 400 with `captcha_key` set to a
-  list such as `["captcha-required"]`, plus `captcha_sitekey` and
-  `captcha_service`.
+  list such as `["captcha-required"]`, plus `captcha_sitekey`,
+  `captcha_service` (`hcaptcha`), and optionally `captcha_rqdata` and
+  `captcha_rqtoken`. A browser solves it (hCaptcha render, `rqdata` passed with
+  `setData`), then the request is repeated with the answer in `X-Captcha-Key`
+  and `rqtoken` in `X-Captcha-Rqtoken`. (verify: whether hCaptcha accepts the
+  widget served from localhost; Agenticord loads its script with `host=discord.com`.)
 - HTTP 401 means the token is dead.
 
 ### Endpoints used

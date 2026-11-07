@@ -38,8 +38,11 @@ then **Scan QR Code**, scan it and confirm. Agenticord never sees a password
 or a 2FA code, and saves only the resulting token (mode 0600) in
 `~/.config/agenticord/token`.
 
-If Discord asks for a captcha during QR login, or you would rather paste a
-token:
+If Discord asks for a captcha during QR login, Agenticord serves a one-page
+captcha on `http://127.0.0.1:8792/` (change it with `AGENTICORD_CAPTCHA_PORT`).
+Open it in a browser, solve it, and the login finishes. On a remote machine,
+forward the port first: `ssh -L 8792:127.0.0.1:8792 <machine>`. If that does not
+work, or you would rather paste a token:
 
 ```sh
 printf '%s' "$TOKEN" | agenticord login --token-stdin

@@ -29,6 +29,28 @@ pub struct ApiError {
     pub code: Option<u64>,
     pub message: String,
     pub captcha: bool,
+    /// What a browser needs to solve the captcha, when Discord sent it.
+    pub challenge: Option<Challenge>,
+}
+
+/// A captcha Discord wants solved before it repeats a request.
+#[derive(Debug, Clone)]
+pub struct Challenge {
+    pub service: String,
+    pub sitekey: String,
+    pub rqdata: Option<String>,
+    pub rqtoken: Option<String>,
+}
+
+impl Challenge {
+    fn from_json(json: &Value) -> Option<Self> {
+        Some(Self {
+            service: json["captcha_service"].as_str().unwrap_or("hcaptcha").to_owned(),
+            sitekey: json["captcha_sitekey"].as_str()?.to_owned(),
+            rqdata: json["captcha_rqdata"].as_str().map(str::to_owned),
+            rqtoken: json["captcha_rqtoken"].as_str().map(str::to_owned),
+        })
+    }
 }
 
 impl std::fmt::Display for ApiError {
@@ -137,12 +159,29 @@ impl Discord {
         query: &[(&str, String)],
         body: Option<&Value>,
     ) -> Result<Value> {
+        self.call_with(method, path, query, body, &[]).await
+    }
+
+    /// Like `call`, with extra request headers (used to hand back a solved captcha).
+    pub async fn call_with(
+        &self,
+        method: Method,
+        path: &str,
+        query: &[(&str, String)],
+        body: Option<&Value>,
+        extra: &[(&'static str, String)],
+    ) -> Result<Value> {
         for attempt in 1..=MAX_ATTEMPTS {
             self.throttle().await;
             let mut request = self
                 .http
                 .request(method.clone(), format!("{API}{path}"))
                 .headers(self.headers.clone());
+            for (name, value) in extra {
+                if let Ok(value) = HeaderValue::from_str(value) {
+                    request = request.header(HeaderName::from_static(name), value);
+                }
+            }
             if !query.is_empty() {
                 request = request.query(query);
             }
@@ -184,6 +223,7 @@ impl Discord {
                     .map(str::to_owned)
                     .unwrap_or_else(|| util::clip(&text, 300)),
                 captcha,
+                challenge: if captcha { Challenge::from_json(&json) } else { None },
             }
             .into());
         }
@@ -196,6 +236,10 @@ impl Discord {
 
     pub async fn post(&self, path: &str, body: &Value) -> Result<Value> {
         self.call(Method::POST, path, &[], Some(body)).await
+    }
+
+    pub async fn post_with(&self, path: &str, body: &Value, extra: &[(&'static str, String)]) -> Result<Value> {
+        self.call_with(Method::POST, path, &[], Some(body), extra).await
     }
 
     /// The account this token belongs to, asked once.
@@ -272,6 +316,7 @@ impl Discord {
             code: json["code"].as_u64(),
             message: json["message"].as_str().unwrap_or(&text).to_owned(),
             captcha: false,
+            challenge: None,
         }
         .into())
     }
