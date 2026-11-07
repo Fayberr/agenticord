@@ -1,7 +1,7 @@
 //! Logging in: by QR code scanned with the phone app (no password, 2FA or
 //! token handling), or by pasting a token. See docs/protocol.md section 4.
 
-use crate::{config, discord::{ApiError, Challenge, Discord}, fingerprint, info};
+use crate::{config, debug, discord::{ApiError, Challenge, Discord}, fingerprint, info};
 use anyhow::{Context, Result, anyhow, bail};
 use base64::{Engine, engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD}};
 use futures_util::{SinkExt, StreamExt};
@@ -216,9 +216,9 @@ pub async fn qr() -> Result<String> {
                 eprintln!("\nScan this with the Discord phone app:");
                 eprintln!("  Settings (your avatar) > Scan QR Code\n");
                 if print_qr(&url).is_err() {
-                    eprintln!("(could not draw the code, open this on the phone instead)");
+                    eprintln!("(could not draw the code; make the terminal wider or use the token login)");
                 }
-                eprintln!("{url}\n");
+                debug!("QR content: {url}");
                 eprintln!("Waiting for the scan (the code lasts about two minutes)...");
             }
             "pending_ticket" => {
