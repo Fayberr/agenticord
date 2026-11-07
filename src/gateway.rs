@@ -126,18 +126,17 @@ impl Inflater {
         }
         let mut out = Vec::with_capacity(self.buffer.len() * 4);
         let mut input: &[u8] = &self.buffer;
+        // The decompressor can hold output back after it has used all its
+        // input, so only stop once a call neither reads nor writes anything.
         loop {
             out.reserve(32 << 10);
-            let before = self.inflate.total_in();
+            let (in_before, out_before) = (self.inflate.total_in(), self.inflate.total_out());
             self.inflate
                 .decompress_vec(input, &mut out, FlushDecompress::Sync)
                 .context("could not inflate a gateway frame")?;
-            let used = (self.inflate.total_in() - before) as usize;
+            let used = (self.inflate.total_in() - in_before) as usize;
             input = &input[used..];
-            if input.is_empty() && out.len() < out.capacity() {
-                break;
-            }
-            if used == 0 && out.len() < out.capacity() {
+            if used == 0 && self.inflate.total_out() == out_before {
                 break;
             }
         }
@@ -438,5 +437,56 @@ impl Conn<'_> {
             _ => {}
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use flate2::{Compress, Compression, FlushCompress};
+
+    /// Compresses `text` as one zlib-stream message (sync flush at the end).
+    fn deflate(c: &mut Compress, text: &[u8]) -> Vec<u8> {
+        let mut out = Vec::with_capacity(text.len() / 2 + 1024);
+        let start = c.total_in();
+        while ((c.total_in() - start) as usize) < text.len() {
+            out.reserve(1 << 16);
+            let done = (c.total_in() - start) as usize;
+            c.compress_vec(&text[done..], &mut out, FlushCompress::None).unwrap();
+        }
+        loop {
+            out.reserve(1 << 16);
+            c.compress_vec(&[], &mut out, FlushCompress::Sync).unwrap();
+            if out.ends_with(&[0, 0, 0xff, 0xff]) && out.len() < out.capacity() {
+                break;
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn inflates_big_frames_in_chunks() {
+        let mut compressor = Compress::new(Compression::default(), true);
+        let mut inflater = Inflater::new();
+        for size in [100usize, 70_000, 6_000_000, 12_345_678] {
+            let mut text = String::from("{\"d\":\"");
+            let mut x: u64 = 12345;
+            while text.len() < size {
+                x = x.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                // Repetitive like real gateway JSON, so it compresses well.
+                text.push_str(&format!("{{\"id\":\"{}\",\"name\":\"channel\",\"type\":0}},", (x >> 50) % 10));
+            }
+            text.push_str("\"}");
+            let packed = deflate(&mut compressor, text.as_bytes());
+            let mut got = None;
+            for chunk in packed.chunks(16 * 1024) {
+                if let Some(frame) = inflater.push(chunk).unwrap() {
+                    got = Some(frame);
+                }
+            }
+            let got = got.expect("a frame");
+            assert_eq!(got.len(), text.len(), "size {size}");
+            assert!(got == text);
+        }
     }
 }
