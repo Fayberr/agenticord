@@ -1,0 +1,6 @@
+/target
+*.log
+.env
+token
+mcp_token
+audit.jsonl

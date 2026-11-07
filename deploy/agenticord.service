@@ -1,0 +1,20 @@
+# User service. Install with:
+#   mkdir -p ~/.config/systemd/user && cp deploy/agenticord.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now agenticord
+#   loginctl enable-linger $USER      # keep it running when logged out
+[Unit]
+Description=Agenticord (Discord for AI agents, MCP server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=%h/.local/bin/agenticord serve
+Restart=always
+RestartSec=10
+Nice=10
+MemoryHigh=64M
+MemoryMax=128M
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
