@@ -8,13 +8,13 @@ It acts as the real account, so the people on the other end see a normal user.
 ## Is it available to me?
 
 - MCP server name: `agenticord`. Tools appear as `mcp__agenticord__<tool>` in Claude Code.
-- Check: `agenticord whoami` (shell) or the `discord_status` tool. A healthy answer has
-  `"gateway":"ready"`.
+- Check: `agenticord whoami` (shell, checks the login) or the MCP `discord_status` tool. A healthy
+  answer has `"gateway":"ready"`.
 - Not there? `claude mcp list | grep agenticord`. If missing, run `agenticord mcp-info` and use the
   `claude mcp add` command it prints. The service is `systemctl --user status agenticord`
   (set `XDG_RUNTIME_DIR=/run/user/$(id -u)` in a plain shell).
 - No MCP in this session? Use the CLI instead: `agenticord call <tool> '<json>'`, for example
-  `agenticord call read_messages '{"channel_id":"123","limit":20}'`. `agenticord tools` lists them.
+  `agenticord call read_messages '{"channel_id":"123","limit":20}'`. `agenticord tools` lists them. The CLI runs offline (no gateway): there `discord_status` says `not started` and `recent_events` is empty. Use the MCP tools for those two, and `systemctl --user status agenticord` / `journalctl --user -u agenticord` to judge the live server.
 - It listens on `127.0.0.1:8790` of the machine it runs on. From another machine, forward the port
   (`ssh -L 8790:127.0.0.1:8790 <host>`) and add the MCP server with the bearer token from
   `agenticord mcp-info` on the host.
