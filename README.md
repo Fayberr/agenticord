@@ -6,8 +6,9 @@ Antigravity, anything that speaks MCP) the tools to read, search and send as
 you. No browser, no Electron, no UI.
 
 - One static binary, about 4 MB, written in Rust.
-- Idles in single-digit megabytes. The 90+ server READY payload is parsed for
-  a few fields and dropped instead of cached.
+- Small by design: about 6 MB resident with the server idle and no account
+  attached. The large READY payload is parsed for a few fields and dropped
+  instead of cached. Memory with a busy real account is still to be measured.
 - Cold release build in about one minute on a 4-core ARM box, incremental
   rebuilds in seconds. No Skia, no UI toolkit, no native media stack.
 - MCP over HTTP (bearer token) or stdio.
