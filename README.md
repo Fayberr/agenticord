@@ -50,6 +50,11 @@ printf '%s' "$TOKEN" | agenticord login --token-stdin
 
 Check it worked: `agenticord whoami`.
 
+## For AI agents
+
+Agent-facing usage, recipes (finding channels, reading forum threads), rules and troubleshooting
+are in [AGENTS.md](AGENTS.md). The MCP server also sends a short version of it as its `instructions`.
+
 ## Run it
 
 ```sh

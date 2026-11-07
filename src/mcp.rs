@@ -18,6 +18,31 @@ const VERSIONS: &[&str] = &["2025-06-18", "2025-03-26", "2024-11-05"];
 /// Longest tool answer returned, in characters.
 const OUTPUT_CAP: usize = 60_000;
 
+/// What a connecting agent is told about this server.
+const INSTRUCTIONS: &str = "Agenticord acts as Fabian's real Discord user account (not a bot). \
+Use it for anything on Discord: reading and searching messages, DMs, sending, replying, reacting, \
+editing, server and channel info, forum threads, status.\n\
+\n\
+Find things: list_guilds gives server ids; list_channels(guild_id) gives channel ids; list_dms gives DM \
+channel ids and names (match a person by name there, or open_dm(user_id)). All ids are strings. \
+Threads and forum posts are channels: read_messages works on a thread id. To list forum posts, use \
+discord_api GET /channels/{forum_id}/threads/search with query sort_by=creation_time, sort_order=desc, \
+limit=25, offset=N (the active-threads endpoint is bot-only and fails).\n\
+\n\
+Read: read_messages returns newest first, up to 100 per call; page with before=<oldest id>. \
+search_messages needs guild_id (or channel_id for a DM); the index can take a few seconds the first time. \
+recent_events lists DMs and mentions that arrived while the server ran.\n\
+\n\
+Write: every send, edit, delete, reaction and status change is a real action from Fabian's account that \
+other people see. Do not send, edit or delete on your own initiative: do it when asked, and show the exact \
+text first if it is not obvious. clear_messages is a dry run unless confirm=true. Writes are logged to \
+~/.config/agenticord/audit.jsonl.\n\
+\n\
+Limits: no captcha-gated actions (joining by invite often needs one), no voice or video. Requests are \
+paced and rate limits are waited out, so long loops are slow on purpose; do not hammer the API. \
+Account-security endpoints are blocked in discord_api. A 403 Missing Access means the account cannot see \
+that channel or list; it is not a bug. discord_status shows whether the gateway is connected.";
+
 fn error(id: Value, code: i64, message: &str) -> Value {
     json!({"jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}})
 }
@@ -34,7 +59,7 @@ pub async fn handle(ctx: &Ctx, request: Value) -> Option<Value> {
                 "protocolVersion": version,
                 "capabilities": {"tools": {"listChanged": false}},
                 "serverInfo": {"name": "agenticord", "version": env!("CARGO_PKG_VERSION")},
-                "instructions": "Acts as the user's Discord account. Prefer read tools first. Messages are sent from the real account, so confirm before sending or deleting on the user's behalf unless told otherwise.",
+                "instructions": INSTRUCTIONS,
             })
         }
         "ping" => json!({}),

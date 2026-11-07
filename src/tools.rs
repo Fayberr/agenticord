@@ -175,7 +175,7 @@ pub fn list() -> Vec<Value> {
         ),
         tool(
             "discord_api",
-            "Call any Discord REST endpoint as the account (path relative to /api/v9, e.g. /guilds/ID/roles). Account-security endpoints are blocked.",
+            "Call any Discord REST endpoint as the account (path relative to /api/v9, e.g. /guilds/ID/roles). Account-security endpoints are blocked. Recipes: list forum posts with GET /channels/{forum_id}/threads/search (query sort_by=creation_time, sort_order=desc, limit=25, offset); guild notification settings with PATCH /users/@me/guilds/{id}/settings; then read a thread with read_messages using the thread id.",
             json!({
                 "method": {"type": "string", "description": "GET, POST, PUT, PATCH or DELETE"},
                 "path": {"type": "string", "description": "Starts with /"},
