@@ -3,8 +3,9 @@
 These are the protocol facts Agenticord relies on, written in my own words.
 They describe how Discord's web client talks to Discord, so that a headless
 client can do the same. Nothing here is copied from another client's source.
-The facts were cross-checked against a working open-source client's behavior
-and have to be confirmed against the live service, which is the authority.
+The facts were cross-checked against the behavior of
+[yapfast](https://github.com/yapfast/yapfast), the reference for the API, and
+have to be confirmed against the live service, which is the authority.
 Anything marked **(verify)** has not yet been confirmed live.
 
 ## 1. Presenting as the web client

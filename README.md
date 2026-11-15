@@ -116,6 +116,12 @@ agenticord call read_messages '{"channel_id":"123456789012345678","limit":10}'
 `docs/protocol.md` describes everything Agenticord relies on: the headers and
 fingerprint of the web client, the REST calls, the gateway, and the QR login.
 
+## Credits
+
+[yapfast](https://github.com/yapfast/yapfast) is the reference for the
+Discord API behavior Agenticord implements. Its client was used to
+cross-check the protocol notes in `docs/protocol.md`.
+
 ## Limits
 
 - No voice, video, screen share or push notifications.
