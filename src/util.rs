@@ -1,7 +1,7 @@
 //! Small helpers: ids, time, randomness, percent-encoding, logging.
 
 use anyhow::{Result, bail};
-use rsa::rand_core::{OsRng, RngCore};
+use rand::Rng;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Discord's epoch, in unix milliseconds.
@@ -24,7 +24,7 @@ pub fn nonce() -> String {
 }
 
 pub fn random_u64() -> u64 {
-    OsRng.next_u64()
+    rand::rng().next_u64()
 }
 
 /// A random float in `0.0..1.0`.
@@ -39,7 +39,7 @@ pub fn jitter(base: Duration, low: f64, high: f64) -> Duration {
 
 pub fn random_hex(bytes: usize) -> String {
     let mut buf = vec![0u8; bytes];
-    OsRng.fill_bytes(&mut buf);
+    rand::rng().fill_bytes(&mut buf);
     buf.iter().map(|b| format!("{b:02x}")).collect()
 }
 

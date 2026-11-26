@@ -5,7 +5,7 @@ use crate::{config, debug, discord::{ApiError, Challenge, Discord}, fingerprint,
 use anyhow::{Context, Result, anyhow, bail};
 use base64::{Engine, engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD}};
 use futures_util::{SinkExt, StreamExt};
-use rsa::{Oaep, RsaPrivateKey, pkcs8::EncodePublicKey, rand_core::OsRng};
+use rsa::{Oaep, PrivateKey, pkcs8::EncodePublicKey};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::time::Duration;
@@ -21,11 +21,11 @@ fn text(value: Value) -> Message {
     Message::text(value.to_string())
 }
 
-fn decrypt(key: &RsaPrivateKey, field: &Value) -> Result<Vec<u8>> {
+fn decrypt(key: &PrivateKey, field: &Value) -> Result<Vec<u8>> {
     let encrypted = STANDARD
         .decode(field.as_str().context("Discord's login service sent nothing to read")?)
         .context("could not read Discord's login service")?;
-    key.decrypt(Oaep::new::<Sha256>(), &encrypted)
+    key.decrypt(Oaep::<Sha256>::new(), &encrypted)
         .map_err(|_| anyhow!("could not decrypt what Discord's login service sent"))
 }
 
@@ -160,7 +160,7 @@ async fn solve(challenge: &Challenge) -> Result<String> {
 pub async fn qr() -> Result<String> {
     let discord = Discord::connect(None).await?;
     eprintln!("Making a login key...");
-    let key = tokio::task::spawn_blocking(|| RsaPrivateKey::new(&mut OsRng, 2048))
+    let key = tokio::task::spawn_blocking(|| PrivateKey::new(&mut rand::rng(), 2048))
         .await?
         .context("could not make a key")?;
     let public = key.to_public_key().to_public_key_der().context("could not encode the key")?;
@@ -291,5 +291,14 @@ mod tests {
         assert!(!page.contains("data</script>"), "rqdata must not close the script tag");
         client.post("http://127.0.0.1:18792/solved").body("P1_answer").send().await.unwrap();
         assert_eq!(solver.await.unwrap().unwrap(), "P1_answer");
+    }
+
+    #[test]
+    fn decrypts_what_discord_encrypts_with_oaep_sha256() {
+        // Discord encrypts with the public key we send, RSA-OAEP with SHA-256.
+        let key = PrivateKey::new(&mut rand::rng(), 2048).unwrap();
+        let sent = key.to_public_key().encrypt(&mut rand::rng(), Oaep::<Sha256>::new(), b"nonce-123").unwrap();
+        let field = Value::String(STANDARD.encode(sent));
+        assert_eq!(decrypt(&key, &field).unwrap(), b"nonce-123");
     }
 }
